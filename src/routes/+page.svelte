@@ -4,12 +4,10 @@
 	import * as Accordion from '$lib/components/ui/accordion/index.js';
 	import * as Drawer from '$lib/components/ui/drawer/index.js';
 
-	// Reactive stores
 	let stations: any[] = [];
 	let provinces: any[] = [];
 	let loading = true;
 
-	// Debounce variables
 	let debounceTimeout: any;
 
 	async function fetch_stations() {
@@ -24,74 +22,72 @@
 
 			const json_data = await res.json();
 
-			// Extract stations from API response
+			
 			stations = Object.values(json_data.ListaEESSPrecio || json_data);
-
-			// Add a new property `searchProps` to each station combining 'Rótulo', 'Municipio', and 'Provincia'
 			stations = stations.map((station) => ({
 				...station,
 				searchProps: `${station.Rótulo} ${station.Municipio} ${station.Provincia}`.toLowerCase()
 			}));
 
-			// Extract unique provinces
+			
 			provinces = [...new Set(stations.map((station) => station.Provincia))].sort((a, b) =>
 				a.localeCompare(b)
 			);
 		} catch (error) {
 			console.error(error);
 		} finally {
-			loading = false; // Mark loading as finished
+			loading = false; 
 		}
 	}
 
-	// Run fetchStations() on mount
+	
 	fetch_stations();
 
 	let has_input = false;
 
-	let filtered_stations: any[] = []; // To hold the filtered results
+	let filtered_stations: any[] = []; 
 
-	// Function to search and store results in the 'test' variable with debounce
+	
 	function search_station() {
-		// Clear the previous debounce timeout to reset the delay
+		
 		clearTimeout(debounceTimeout);
 
 		let input = (document.getElementById('searchbar') as HTMLInputElement).value;
 
-		// Convert input to lowercase and split it into words
-		let searchTerms = input.toLowerCase().split(/\s+/).filter(Boolean); // Split on spaces and remove empty terms
+		
+		let searchTerms = input.toLowerCase().split(/\s+/).filter(Boolean);
 
-		// Set a new timeout to execute the filtering after the user stops typing
+		
 		debounceTimeout = setTimeout(() => {
-			// Clear out previous search results
+			
 			filtered_stations = [];
 
-			// If the input is not empty, filter the stations
+			
 			if (searchTerms.length > 0) {
-				has_input = true; // Set has_input to true if there is input
-				// Loop through stations and filter based on the 'searchProps' property
+				has_input = true; 
+				
 				for (let i = 0; i < stations.length; i++) {
 					let obj = stations[i];
 
-					// Check if all search terms are included in searchProps
+					
 					if (searchTerms.every((term) => obj.searchProps.includes(term))) {
-						filtered_stations = [...filtered_stations, obj]; // Adding to test (reactively)
+						filtered_stations = [...filtered_stations, obj];
 					}
 				}
 			} else {
-				// If the search is empty, reset to the full stations array and set has_input to false
+				false
 				filtered_stations = stations;
-				has_input = false; // Set has_input to false when search bar is empty
+				has_input = false; 
 			}
-		}, 300); // 300 milliseconds delay
+		}, 300); 
 	}
 
-	// Function to clear the search bar and reset results
+
 	function clear_search() {
 		const searchInput = document.getElementById('searchbar') as HTMLInputElement;
-		searchInput.value = ''; // Clear the input field
-		filtered_stations = []; // Clear filtered stations
-		has_input = false; // Set has_input to false
+		searchInput.value = '';
+		filtered_stations = [];
+		has_input = false;
 	}
 
 	function capitalize(text: string) {
@@ -111,8 +107,9 @@
 </div>
 
 {#if loading}
-	<div class="w-full gap-4 p-5 text-center">
+	<div class="w-full gap-4 p-5 text-center flex flex-col items-center">
 		<h1>cargando datos, paciencia:</h1>
+		<img src="gameplay.gif" alt="">
 	</div>
 {:else if stations.length === 0}
 	<p>No stations found.</p>
