@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {
-    const res = await fetch('/estaciones.json');
+    const res = await fetch('https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/');
 
     if (!res.ok) {
         throw new Error(`Failed to fetch: ${res.status}`);
