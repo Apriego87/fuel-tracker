@@ -3,41 +3,45 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Accordion from '$lib/components/ui/accordion/index.js';
 
+	// Reactive stores
 	let stations: any[] = [];
 	let provinces: any[] = [];
+	let loading = true;
 
 	async function fetchStations() {
-		const res = await fetch(
-			'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres'
-		);
+		try {
+			const res = await fetch(
+				'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres'
+			);
 
-		if (!res.ok) {
-			console.error('Failed to fetch stations');
-			return;
+			if (!res.ok) {
+				throw new Error('Failed to fetch stations');
+			}
+
+			const json_data = await res.json();
+
+			// Extract stations from API response
+			stations = Object.values(json_data.ListaEESSPrecio || json_data);
+
+			// Extract unique provinces
+			provinces = [...new Set(stations.map((station) => station.Provincia))].sort((a, b) =>
+				a.localeCompare(b)
+			);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			loading = false; // Mark loading as finished
 		}
-
-		const json_data = await res.json();
-
-		// Extract stations from API response
-		stations = Object.values(json_data.ListaEESSPrecio || json_data);
-
-		// Extract unique provinces
-		provinces = [...new Set(stations.map((station) => station.Provincia))].sort((a, b) =>
-			a.localeCompare(b)
-		);
-
-		// Update the reactive variables
-		stations = [...stations];
-		provinces = [...provinces];
 	}
 
+	// Run fetchStations() on mount
 	fetchStations();
 
-	function capitalize(text: String) {
+	function capitalize(text: string) {
 		return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
 	}
 
-	const getPrecioFields = (station: String) => {
+	const getPrecioFields = (station: { [key: string]: any }) => {
 		return Object.entries(station)
 			.filter(([key, value]) => key.includes('Precio') && value.trim() !== '')
 			.map(([key, value]) => ({ key, value }));
@@ -49,8 +53,13 @@
 	<sub class="italic">by toñ</sub>
 </div>
 
-{#if stations.length === 0}
-	<p class="text-center mt-5">Cargando datos...</p>
+{#if loading}
+	<div class="w-full text-center gap-4 p-5">
+		<h1>cargando datos, entreténte mientras:</h1>
+		<img src="/gameplay.gif" alt="Loading..." class="mx-auto max-w-full" />
+	</div>
+{:else if stations.length === 0}
+	<p>No stations found.</p>
 {:else}
 	<Accordion.Root type="single">
 		{#each provinces as province}
