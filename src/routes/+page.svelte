@@ -12,7 +12,7 @@
 	// Debounce variables
 	let debounceTimeout: any;
 
-	async function fetch_stations() {
+	async function fetchStations() {
 		try {
 			const res = await fetch(
 				'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres'
@@ -27,6 +27,12 @@
 			// Extract stations from API response
 			stations = Object.values(json_data.ListaEESSPrecio || json_data);
 
+			// Add a new property `searchProps` to each station combining 'Rótulo', 'Municipio', and 'Provincia'
+			stations = stations.map((station) => ({
+				...station,
+				searchProps: `${station.Rótulo} ${station.Municipio} ${station.Provincia}`.toLowerCase()
+			}));
+
 			// Extract unique provinces
 			provinces = [...new Set(stations.map((station) => station.Provincia))].sort((a, b) =>
 				a.localeCompare(b)
@@ -39,45 +45,43 @@
 	}
 
 	// Run fetchStations() on mount
-	fetch_stations();
+	fetchStations();
 
 	let has_input = false;
 
-	let filtered_stations: any[] = []; // To hold the filtered results
+	let test: any[] = []; // To hold the filtered results
 
 	// Function to search and store results in the 'test' variable with debounce
-	function search_station() {
+	// Function to search and store results in the 'test' variable with debounce
+	function search_animal() {
 		// Clear the previous debounce timeout to reset the delay
 		clearTimeout(debounceTimeout);
 
 		let input = (document.getElementById('searchbar') as HTMLInputElement).value;
 
-		input = input.toLowerCase();
+		// Convert input to lowercase and split it into words
+		let searchTerms = input.toLowerCase().split(/\s+/).filter(Boolean); // Split on spaces and remove empty terms
 
 		// Set a new timeout to execute the filtering after the user stops typing
 		debounceTimeout = setTimeout(() => {
 			// Clear out previous search results
-			filtered_stations = [];
+			test = [];
 
 			// If the input is not empty, filter the stations
-			if (input) {
+			if (searchTerms.length > 0) {
 				has_input = true; // Set has_input to true if there is input
-				// Loop through stations and filter based on the search query
+				// Loop through stations and filter based on the 'searchProps' property
 				for (let i = 0; i < stations.length; i++) {
 					let obj = stations[i];
 
-					// If the Rótulo, Provincia, or Municipio contains the search input, add the object to 'test'
-					if (
-						obj.Rótulo.toLowerCase().includes(input) ||
-						obj.Provincia.toLowerCase().includes(input) ||
-						obj.Municipio.toLowerCase().includes(input)
-					) {
-						filtered_stations = [...filtered_stations, obj]; // Adding to test (reactively)
+					// Check if all search terms are included in searchProps
+					if (searchTerms.every((term) => obj.searchProps.includes(term))) {
+						test = [...test, obj]; // Adding to test (reactively)
 					}
 				}
 			} else {
 				// If the search is empty, reset to the full stations array and set has_input to false
-				filtered_stations = stations;
+				test = stations;
 				has_input = false; // Set has_input to false when search bar is empty
 			}
 		}, 300); // 300 milliseconds delay
@@ -106,10 +110,10 @@
 {:else if stations.length === 0}
 	<p>No stations found.</p>
 {:else}
-	<div class="sticky top-0 isolate z-10 my-5 flex w-full flex-row justify-center gap-4">
+	<div class="sticky top-0 isolate z-10 m-5 flex w-full flex-row justify-center gap-4">
 		<input
 			id="searchbar"
-			on:input={search_station}
+			on:input={search_animal}
 			type="text"
 			name="search"
 			placeholder="Busca por nombre..."
@@ -118,10 +122,10 @@
 	</div>
 	{#if has_input}
 		{#each provinces as province}
-			{#if filtered_stations.some((station) => station.Provincia === province)}
+			{#if test.some((station) => station.Provincia === province)}
 				<!-- Check if there's any station for this province in 'test' -->
 				<div class="grid w-full max-w-full gap-4 overflow-auto bg-gray-300 p-5 md:grid-cols-3">
-					{#each filtered_stations.filter((station) => station.Provincia === province) as station}
+					{#each test.filter((station) => station.Provincia === province) as station}
 						<Card.Root class="flex flex-col justify-between">
 							<Card.Header>
 								<Card.Title>
@@ -151,7 +155,7 @@
 					<Accordion.Trigger class="mx-2">{province}</Accordion.Trigger>
 					<Accordion.Content>
 						<div class="grid w-full max-w-full gap-4 overflow-auto bg-gray-300 p-5 md:grid-cols-3">
-							{#each (filtered_stations.length > 0 ? filtered_stations : stations).filter((station) => station.Provincia === province) as station}
+							{#each (test.length > 0 ? test : stations).filter((station) => station.Provincia === province) as station}
 								<Card.Root class="flex flex-col justify-between">
 									<Card.Header>
 										<Card.Title>
