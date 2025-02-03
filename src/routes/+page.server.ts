@@ -1,4 +1,4 @@
-import type { PageServerLoad } from './$types';
+/* import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {
     const res = await fetch('https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/');
@@ -33,7 +33,4 @@ export const load: PageServerLoad = async ({ fetch }) => {
     ];
 
     return { item: stations, provinces };
-};
-
-
-
+}; */
