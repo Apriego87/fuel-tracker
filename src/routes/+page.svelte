@@ -106,7 +106,7 @@
 {:else if stations.length === 0}
 	<p>No stations found.</p>
 {:else}
-	<div class="sticky top-0 isolate z-10 m-5 flex w-full flex-row justify-center gap-4">
+	<div class="sticky top-0 isolate z-10 my-5 flex w-full flex-row justify-center gap-4">
 		<input
 			id="searchbar"
 			on:input={search_station}
