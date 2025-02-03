@@ -55,7 +55,7 @@
 
 {#if loading}
 	<div class="w-full text-center gap-4 p-5">
-		<h1>cargando datos, paciencia:</h1>
+		<h1>cargando datos, paciencia</h1>
 		<!-- <img src="/gameplay.gif" alt="Loading..." class="mx-auto max-w-full" /> -->
 	</div>
 {:else if stations.length === 0}
