@@ -34,3 +34,13 @@ export const load: PageServerLoad = async ({ fetch }) => {
 
     return { item: stations, provinces };
 }; */
+
+import type { PageServerLoad } from "./$types";
+
+export const load: PageServerLoad = async ({ fetch }) => {
+	const response = await fetch('/api/stations');
+
+	return {
+		stations: await response.json()
+	};
+};
