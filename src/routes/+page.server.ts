@@ -35,12 +35,15 @@ export const load: PageServerLoad = async ({ fetch }) => {
     return { item: stations, provinces };
 }; */
 
+import { json } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ fetch }) => {
-	const response = await fetch('/api/stations');
+export const load: PageServerLoad = async () => {
+    const response = await fetch('https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres');
 
-	return {
-		stations: await response.json()
-	};
+    const stations = await response.json()
+
+    return {
+        stations
+    }
 };

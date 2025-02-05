@@ -7,5 +7,7 @@ export async function GET() {
 
     const data = await res.json()
 
-    return json(data)
+    return {
+        data: await data
+    }
 }
