@@ -35,7 +35,6 @@ export const load: PageServerLoad = async ({ fetch }) => {
     return { item: stations, provinces };
 }; */
 
-import { json } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async () => {

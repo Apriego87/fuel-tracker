@@ -11,6 +11,7 @@
 	import type { PageData } from './$types';
 	import { onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
+	import VirtualList from 'svelte-tiny-virtual-list';
 
 	export let data: PageData;
 
@@ -20,20 +21,23 @@
 		is_mobile = window.matchMedia('(max-width: 786px)').matches;
 	}
 
+	function remove_accents(text: string): string {
+		return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+	}
+
 	const search_stations = data.stations.ListaEESSPrecio.map((station) => ({
 		...station,
-		search_terms: `${station.Rótulo} ${station.Municipio} ${station.Provincia}`
+		search_terms: remove_accents(
+			`${station.Rótulo} ${station.Municipio} ${station.Provincia}`
+		).toLowerCase(),
+		precio_fields: Object.entries(station)
+			.filter(([key, value]) => key.includes('Precio') && value.trim() !== '')
+			.map(([key, value]) => ({ key, value }))
 	}));
 
 	const search_store = create_search_store(search_stations);
 
 	const unsubscribe = search_store.subscribe((model) => search_handler(model));
-
-	const getPrecioFields = (station: { [key: string]: any }) => {
-		return Object.entries(station)
-			.filter(([key, value]) => key.includes('Precio') && value.trim() !== '')
-			.map(([key, value]) => ({ key, value }));
-	};
 
 	function clear_search() {
 		const searchInput = document.getElementById('searchbar') as HTMLInputElement;
@@ -43,112 +47,14 @@
 	}
 
 	onDestroy(() => {
-		unsubscribe;
+		unsubscribe();
 	});
-
-	/* const search_stations = data.stations.map((station) => ({
-		...station,
-		search_terms: `${station.Rótulo}`
-	}))
-
-	const search_store = create_search_store(search_stations) */
-
-	/*
-	let stations: any[] = [];
-	let provinces: any[] = [];
-	let loading = true;
-
-	 let debounce_timeout: any;
-
-	function remove_accents(str: string) {
-		return (str ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Ensure it's always a string
-	}
-
-	async function fetch_stations() {
-		try {
-			const res = await fetch(
-				'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres'
-			);
-
-			if (!res.ok) {
-				throw new Error('Failed to fetch stations');
-			}
-
-			const json_data = await res.json();
-
-			stations = Object.values(json_data.ListaEESSPrecio || json_data);
-			stations = stations.map((station) => ({
-				...station,
-				search_props: remove_accents(
-					`${station.Rótulo} ${station.Municipio} ${station.Provincia}`
-				).toLowerCase()
-			}));
-
-			provinces = [...new Set(stations.map((station) => station.Provincia))].sort((a, b) =>
-				a.localeCompare(b)
-			);
-		} catch (error) {
-			console.error(error);
-		} finally {
-			loading = false;
-		}
-	}
-
-	fetch_stations();
-	let has_input = false;
-
-	let filtered_stations: any[] = [];
-
-	function search_station() {
-		clearTimeout(debounce_timeout);
-
-		let input = (document.getElementById('searchbar') as HTMLInputElement).value;
-
-		let searchTerms = input.toLowerCase().split(/\s+/).filter(Boolean);
-
-		debounce_timeout = setTimeout(() => {
-			filtered_stations = [];
-
-			if (searchTerms.length > 0) {
-				has_input = true;
-
-				for (let i = 0; i < stations.length; i++) {
-					let obj = stations[i];
-
-					if (searchTerms.every((term) => obj.search_props.includes(term))) {
-						filtered_stations = [...filtered_stations, obj];
-					}
-				}
-			} else {
-				false;
-				filtered_stations = stations;
-				has_input = false;
-			}
-		}, 300);
-	}
-
-	
-
-	function capitalize(text: string) {
-		return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-	}
-
-	 */
 </script>
 
 <div class="my-5 gap-4 text-center">
 	<h1 class="text-xl underline">Fuel Tracker</h1>
 	<sub class="italic">by toñ</sub>
 </div>
-
-<!-- {#await data.stations}
-	<p>cargando datos, paciencia:</p>
-	<img src="/gameplay.gif" alt="" />
-{:then stations}
-	<pre>{JSON.stringify(stations, null, 2)}</pre>
-{:catch error}
-	<p>hubo un error: {error.message}</p>
-{/await} -->
 
 {#if browser}
 	{#if is_mobile}
@@ -169,7 +75,7 @@
 					</Drawer.Description>
 				</Drawer.Header>
 				<div class="my-5 flex w-full flex-row justify-center gap-4 p-4">
-					<div class="relative w-full flex flex-row">
+					<div class="relative flex w-full flex-row">
 						<input
 							id="searchbar"
 							bind:value={$search_store.search}
@@ -250,7 +156,48 @@
 	{/if}
 {/if}
 
-<div class="grid w-full max-w-full gap-4 overflow-auto bg-red-300 p-4 md:grid-cols-3">
+<div class="h-[80vh]">
+	<VirtualList
+		width="100%"
+		height="100%"
+		itemCount={Math.ceil($search_store.filtered.length / 3)}
+		itemSize={300}
+	>
+		<div slot="item" let:index let:style {style}>
+			<div class="grid-row bg-gray-300 p-2">
+				{#each Array(3) as _, col_index}
+					{#if $search_store.filtered[index * 3 + col_index]}
+						<div class="grid-item m-2">
+							<Card.Root class="flex h-[300px] flex-col justify-center">
+								<Card.Header>
+									<Card.Title class="w-full max-w-full break-all">
+										<p>{$search_store.filtered[index * 3 + col_index].Rótulo}</p>
+									</Card.Title>
+									<Card.Description>
+										<sub>
+											{$search_store.filtered[index * 3 + col_index].Dirección},
+											{$search_store.filtered[index * 3 + col_index].Municipio}
+										</sub>
+									</Card.Description>
+								</Card.Header>
+								<Card.Content>
+									{#each $search_store.filtered[index * 3 + col_index].precio_fields as precio}
+										<p><b>{precio.key}:</b> {precio.value}</p>
+									{/each}
+								</Card.Content>
+								<Card.Footer>
+									<p>{$search_store.filtered[index * 3 + col_index].Horario}</p>
+								</Card.Footer>
+							</Card.Root>
+						</div>
+					{/if}
+				{/each}
+			</div>
+		</div>
+	</VirtualList>
+</div>
+
+<!-- <div class="grid w-full max-w-full gap-4 overflow-auto bg-red-300 p-4 md:grid-cols-3">
 	{#each $search_store.filtered as station}
 		<Card.Root class="flex w-full max-w-full flex-col justify-between">
 			<Card.Header>
@@ -262,8 +209,8 @@
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
-				{#each getPrecioFields(station) as { key, value }}
-					<p><strong>{key.replace('Precio ', '')}:</strong> {value}</p>
+				{#each station.precio_fields as precio}
+					<p><b>{precio.key}:</b> &nbsp; {precio.value}</p>
 				{/each}
 			</Card.Content>
 			<Card.Footer>
@@ -271,7 +218,7 @@
 			</Card.Footer>
 		</Card.Root>
 	{/each}
-</div>
+</div> -->
 
 <!-- {#if loading}
 	<div class="flex w-full flex-col items-center gap-4 p-5 text-center">
@@ -443,3 +390,18 @@
 	{/if}
 {/if}
  -->
+
+<style>
+	.grid-row {
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: 1fr;
+	}
+
+	@media (min-width: 768px) {
+		.grid-row {
+			/* 3 columns for medium and larger screens */
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+</style>
