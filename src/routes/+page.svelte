@@ -39,6 +39,12 @@
 
 	const unsubscribe = search_store.subscribe((model) => search_handler(model));
 
+	$: console.log($search_store.filtered.length)
+
+	$: num_columns = is_mobile ? 1 : 3
+
+	$: item_count = Math.ceil($search_store.filtered.length / num_columns)
+
 	function clear_search() {
 		const searchInput = document.getElementById('searchbar') as HTMLInputElement;
 		searchInput.value = '';
@@ -51,7 +57,7 @@
 	});
 </script>
 
-<div class="my-5 gap-4 text-center">
+<div class="my-5 gap-4 text-center h-[10vh] max-h-[10vh]">
 	<h1 class="text-xl underline">Fuel Tracker</h1>
 	<sub class="italic">by toñ</sub>
 </div>
@@ -156,37 +162,37 @@
 	{/if}
 {/if}
 
-<div class="h-[80vh]">
+<div class="h-[90vh] max-h-[90vh]">
 	<VirtualList
 		width="100%"
 		height="100%"
-		itemCount={Math.ceil($search_store.filtered.length / 3)}
+		itemCount={item_count}
 		itemSize={300}
 	>
 		<div slot="item" let:index let:style {style}>
 			<div class="grid-row bg-gray-300 p-2">
-				{#each Array(3) as _, col_index}
-					{#if $search_store.filtered[index * 3 + col_index]}
+				{#each Array(num_columns) as _, col_index}
+					{#if $search_store.filtered[index * num_columns + col_index]}
 						<div class="grid-item m-2">
 							<Card.Root class="flex h-[300px] flex-col justify-center">
 								<Card.Header>
 									<Card.Title class="w-full max-w-full break-all">
-										<p>{$search_store.filtered[index * 3 + col_index].Rótulo}</p>
+										<p>{$search_store.filtered[index * num_columns + col_index].Rótulo}</p>
 									</Card.Title>
 									<Card.Description>
 										<sub>
-											{$search_store.filtered[index * 3 + col_index].Dirección},
-											{$search_store.filtered[index * 3 + col_index].Municipio}
+											{$search_store.filtered[index * num_columns + col_index].Dirección},
+											{$search_store.filtered[index * num_columns + col_index].Municipio}
 										</sub>
 									</Card.Description>
 								</Card.Header>
 								<Card.Content>
-									{#each $search_store.filtered[index * 3 + col_index].precio_fields as precio}
+									{#each $search_store.filtered[index * num_columns + col_index].precio_fields as precio}
 										<p><b>{precio.key}:</b> {precio.value}</p>
 									{/each}
 								</Card.Content>
 								<Card.Footer>
-									<p>{$search_store.filtered[index * 3 + col_index].Horario}</p>
+									<p>{$search_store.filtered[index * num_columns + col_index].Horario}</p>
 								</Card.Footer>
 							</Card.Root>
 						</div>
