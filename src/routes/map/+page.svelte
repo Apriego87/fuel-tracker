@@ -21,7 +21,7 @@
 
 	function initMap(lat: number, lng: number) {
 		map = L.map('map').setView([lat, lng], 13);
-		var Esri_WorldImagery = L.tileLayer(
+		L.tileLayer(
 			'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 			{
 				attribution:
