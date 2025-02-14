@@ -47,7 +47,7 @@
 		</Card.Header>
 		<Card.Content>
 			<Badge
-				class="text-md"
+				class="text-md hover:cursor-pointer"
 				onclick={() => {
 					goto('/map');
 				}}>Mapa</Badge
@@ -62,7 +62,7 @@
 		</Card.Header>
 		<Card.Content>
 			<Badge
-				class="text-md"
+				class="text-md hover:cursor-pointer"
 				onclick={() => {
 					goto('/finder');
 				}}>Buscador</Badge
