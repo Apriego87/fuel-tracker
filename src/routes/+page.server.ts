@@ -38,11 +38,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
 import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async () => {
-    const response = await fetch('https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres');
-
-    const stations = await response.json()
-
-    return {
-        stations
-    }
+    const promise = fetch('https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres')
+        .then((res) => res.json());
+    return { stations: promise };
 };

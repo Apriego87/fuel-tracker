@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { search_store } from '$lib/stores/fuel_stations';
+	import { goto } from '$app/navigation';
 
 	let map;
 	let L; // We'll assign the Leaflet module here dynamically
@@ -56,6 +57,10 @@
 
 	onMount(async () => {
 		await initLeaflet();
+
+		if(stations.length == 0) {
+			window.location.href = '/'
+		}
 
 		// Ask for geolocation, then initialize the map
 		if (navigator.geolocation) {
