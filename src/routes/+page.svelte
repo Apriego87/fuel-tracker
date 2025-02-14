@@ -2,8 +2,8 @@
 	import { goto } from '$app/navigation';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { search_handler, search_store } from '$lib/stores/fuel_stations';
-	import { onDestroy } from 'svelte';
+	import { search_store } from '$lib/stores/fuel_stations';
+
 
 	function remove_accents(text: string): string {
 		return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');

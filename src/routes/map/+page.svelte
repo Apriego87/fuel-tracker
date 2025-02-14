@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { search_store } from '$lib/stores/fuel_stations';
-	import Badge from '$lib/components/ui/badge/badge.svelte';
-	import { goto } from '$app/navigation';
 
 	let map;
 	let L; // We'll assign the Leaflet module here dynamically
@@ -12,11 +10,19 @@
 	async function initLeaflet() {
 		const leaflet = await import('leaflet');
 		L = leaflet.default;
-		// Import CSS (these side effects don't need to be assigned)
+		// Import CSS for Leaflet and marker cluster
 		await import('leaflet/dist/leaflet.css');
 		await import('leaflet.markercluster');
 		await import('leaflet.markercluster/dist/MarkerCluster.css');
 		await import('leaflet.markercluster/dist/MarkerCluster.Default.css');
+
+		// Configure default icon URLs after L is defined
+		delete L.Icon.Default.prototype._getIconUrl;
+		L.Icon.Default.mergeOptions({
+			iconRetinaUrl: '/leaflet/images/marker-icon-2x.png',
+			iconUrl: '/leaflet/images/marker-icon.png',
+			shadowUrl: '/leaflet/images/marker-shadow.png'
+		});
 	}
 
 	function initMap(lat: number, lng: number) {
@@ -38,12 +44,12 @@
 			if (!isNaN(station_lat) && !isNaN(station_long)) {
 				// Build an HTML string for the popup
 				const popupContent = `
-      <div>
-        <h3><strong>${station.Rótulo}</strong></h3>
-        <p><strong>Dirección:</strong> ${station.Dirección}</p>
-        <p><strong>Horario:</strong> ${station.Horario}</p>
-      </div>
-    `;
+          <div>
+            <h3><strong>${station.Rótulo}</strong></h3>
+            <p><strong>Dirección:</strong> ${station.Dirección}</p>
+            <p><strong>Horario:</strong> ${station.Horario}</p>
+          </div>
+        `;
 				const marker = L.marker([station_lat, station_long]).bindPopup(popupContent);
 				markers.addLayer(marker);
 			}
@@ -64,7 +70,7 @@
 				},
 				(error) => {
 					console.error('Error getting location:', error);
-					// Use a fallback default location (e.g., Madrid)
+					// Use fallback default location (e.g., Madrid)
 					initMap(40.416775, -3.70379);
 				}
 			);
