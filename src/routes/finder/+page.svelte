@@ -243,7 +243,7 @@
 		<Accordion.Item value={province}>
 			<Accordion.Trigger class="mx-2">{province}</Accordion.Trigger>
 			<Accordion.Content>
-				<div class="md:h-[80vh] md:max-h-[80vh]">
+				<div class="h-[80vh] max-h-[80vh]">
 					<VirtualList width="100%" height="100%" itemCount={item_count} itemSize={350}>
 						<div slot="item" let:index let:style {style}>
 							<div class="grid-row bg-gray-300 p-2">
