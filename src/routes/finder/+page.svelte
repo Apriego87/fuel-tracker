@@ -91,6 +91,11 @@
 
 	let is_mobile = $state(false);
 
+	function isMobile() {
+	  const regex = /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+	  return regex.test(navigator.userAgent);
+	}
+
 	$effect(() => {
 		// Retrieve current filter values
 		const province_filter = selected_province ? selected_province.value : '';
@@ -147,16 +152,20 @@
 	});
 
 	onMount(() => {
-		is_mobile = window.matchMedia('(max-width: 786px)').matches;
-
+		// Set initial value
 		function updateIsMobile() {
-			is_mobile = window.matchMedia('(max-width: 786px)').matches;
+			is_mobile = isMobile();
 		}
+		updateIsMobile();
+		console.log(is_mobile ? "Mobile device detected" : "Desktop device detected");
+		
+		// Optionally, update on resize if needed
 		window.addEventListener('resize', updateIsMobile);
 		return () => window.removeEventListener('resize', updateIsMobile);
 	});
 
 	let num_columns = $derived(is_mobile ? 1 : 3);
+	$inspect(num_columns)
 
 	let stations_by_province = $derived(
 		provinces.reduce((acc, province) => {
@@ -253,6 +262,7 @@
 					>
 						<div slot="item" let:index let:style {style}>
 							<div class="grid-row bg-gray-300 p-2">
+								{console.log(province + ' ' + Math.ceil(province_stations.length / num_columns))}
 								{#each Array(num_columns) as _, col_index}
 									{#if province_stations[index * num_columns + col_index]}
 										<div class="grid-item m-2">
