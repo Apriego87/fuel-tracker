@@ -157,7 +157,7 @@
 			is_mobile = isMobile();
 		}
 		updateIsMobile();
-		console.log(is_mobile ? "Mobile device detected" : "Desktop device detected");
+		console.log(navigator.userAgent);
 		
 		// Optionally, update on resize if needed
 		window.addEventListener('resize', updateIsMobile);
@@ -252,7 +252,7 @@
 			<Accordion.Trigger class="mx-2">{province}</Accordion.Trigger>
 			<Accordion.Content>
 				<div
-					class="h-[{Math.ceil(province_stations.length / num_columns) == 1 ? '400px' : '72vh'}]"
+					class="h-[72vh]"
 				>
 					<VirtualList
 						width="100%"
