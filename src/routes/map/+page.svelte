@@ -66,12 +66,11 @@
 	onMount(async () => {
 		await initLeaflet();
 
-		if (stations.length == 0 && navigator.geolocation) {
-			window.location.href = '/';
-		}
-
 		// Ask for geolocation, then initialize the map
 		if (navigator.geolocation) {
+			if (stations.length == 0) {
+				window.location.href = '/';
+			}
 			navigator.geolocation.getCurrentPosition(
 				(position) => {
 					const { latitude, longitude } = position.coords;
