@@ -66,7 +66,7 @@
 	onMount(async () => {
 		await initLeaflet();
 
-		if (stations.length == 0) {
+		if (stations.length == 0 && navigator.geolocation) {
 			window.location.href = '/';
 		}
 
