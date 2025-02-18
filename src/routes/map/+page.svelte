@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { search_store } from '$lib/stores/fuel_stations';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { goto } from '$app/navigation';
 
 	let map;
@@ -39,12 +40,19 @@
 			const station_lat = parseFloat(station.Latitud.replace(',', '.'));
 			const station_long = parseFloat(station['Longitud (WGS84)'].replace(',', '.'));
 			if (!isNaN(station_lat) && !isNaN(station_long)) {
-				// Build an HTML string for the popup
-				const popupContent = `
+				const pricesHtml = station.precio_fields
+					.map((field) => `<span><strong>${field.key}:</strong> ${field.value}€</span> <br/>`)
+					.join('');
+				const popupContent =
+					`
           <div>
             <h3><strong>${station.Rótulo}</strong></h3>
             <p><strong>Dirección:</strong> ${station.Dirección}</p>
+			` +
+					pricesHtml +
+					`
             <p><strong>Horario:</strong> ${station.Horario}</p>
+			<a target="_blank" href="http://maps.google.com/?q=${parseFloat(station.Latitud.replace(',', '.'))},${parseFloat(station['Longitud (WGS84)'].replace(',', '.'))}"><p>Abrir en Maps</p></a>
           </div>
         `;
 				const marker = L.marker([station_lat, station_long]).bindPopup(popupContent);
@@ -58,8 +66,8 @@
 	onMount(async () => {
 		await initLeaflet();
 
-		if(stations.length == 0) {
-			window.location.href = '/'
+		if (stations.length == 0) {
+			window.location.href = '/';
 		}
 
 		// Ask for geolocation, then initialize the map
@@ -70,7 +78,6 @@
 					initMap(latitude, longitude);
 				},
 				(error) => {
-					console.error('Error getting location:', error);
 					initMap(40.416775, -3.70379);
 				}
 			);
@@ -81,7 +88,7 @@
 </script>
 
 <div class="bold flex h-[10vh] flex-col items-center justify-center text-2xl">
-	<h1>Mapa de estaciones</h1>
+	<h1 class="text-3xl font-bold">Mapa de estaciones</h1>
 </div>
 
 <div id="map" class="z-0 h-[90vh] w-full"></div>

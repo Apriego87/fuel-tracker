@@ -9,7 +9,7 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger class="fixed right-4 top-4 z-50"
+	<DropdownMenu.Trigger class="fixed right-8 bottom-4 z-50"
 		><Button
 			variant="default"
 			class="flex h-10 w-10 items-center justify-center rounded-full p-0 shadow-lg"

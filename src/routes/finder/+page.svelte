@@ -2,10 +2,12 @@
 	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card/index';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Label } from '$lib/components/ui/label';
 	import * as Accordion from '$lib/components/ui/accordion/index.js';
+	import Select from 'svelte-select';
 	import * as Popover from '$lib/components/ui/popover/index.js';
-	import * as Drawer from '$lib/components/ui/drawer/index.js';
-	import { MagnifyingGlass } from 'svelte-radix';
+	import { ChevronDown } from 'svelte-radix';
+	import Searchbar from '$lib/components/custom/searchbar/searchbar.svelte';
 	import { search_store } from '$lib/stores/fuel_stations';
 	import VirtualList from 'svelte-tiny-virtual-list';
 
@@ -64,175 +66,151 @@
 		'ZARAGOZA'
 	];
 
-	let is_mobile = false;
+	let fuels = [
+		'Biodiesel',
+		'Bioetanol',
+		'Gas Natural Comprimido',
+		'Gas Natural Licuado',
+		'Gases Licuados del Petróleo',
+		'Gasoleo A',
+		'Gasoleo B',
+		'Gasoleo Premium',
+		'Gasolina 95 E5',
+		'Gasolina 95 E5 premium',
+		'Gasolina 95 E10',
+		'Gasolina 98 E5',
+		'Gasolina 98 E10',
+		'Hidrogeno'
+	];
 
-	onMount(() => {
-		if ($search_store.data.length == 0) {
-			window.location.href = '/';
+	let open_popover = $state(false);
+
+	let selected_province = $state('');
+
+	let selected_fuel = $state('');
+
+	let is_mobile = $state(false);
+
+	$effect(() => {
+		const province_filter = selected_province ? selected_province.value : '';
+		const fuel_filter = selected_fuel ? selected_fuel.value : '';
+
+		if (selected_fuel || selected_province) {
+			open_popover = false;
 		}
-		is_mobile = window.matchMedia('(max-width: 786px)').matches;
-	});
 
-	// Reactive declarations for grid layout
-	$: num_columns = is_mobile ? 1 : 3;
-	$: item_count = Math.ceil($search_store.filtered.length / num_columns);
-
-	function clear_search() {
-		const searchInput = document.getElementById('searchbar') as HTMLInputElement;
-		if (searchInput) searchInput.value = '';
 		search_store.update((s) => ({
 			...s,
-			search: '',
-			filtered: s.data
+			selected_province: province_filter,
+			selected_fuel: fuel_filter,
+			filtered: s.data.filter((station) => {
+	
+				const province_match = province_filter
+					? station.Provincia.toLowerCase().includes(province_filter.toLowerCase())
+					: true;
+	
+				const fuel_match = fuel_filter
+					? station.precio_fields.some(
+							(field) =>
+								field.key.toLowerCase().includes(fuel_filter.toLowerCase()) ||
+								(typeof field.value === 'string' &&
+									field.value.toLowerCase().includes(fuel_filter.toLowerCase()))
+						)
+					: true;
+
+					const search_match = station.search_terms.toLowerCase().includes(s.search.toLowerCase()) 
+				return province_match && fuel_match && search_match;
+			})
 		}));
-	}
+	});
 
-	function remove_accents(text: string): string {
-		return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-	}
+	onMount(() => {
+		is_mobile = window.matchMedia('(max-width: 786px)').matches;
 
-	$: stations_by_province = provinces.reduce((acc, province) => {
-		const filtered = $search_store.filtered.filter((station) => station.Provincia === province);
-		if (filtered.length > 0) {
-			acc[province] = filtered;
+		function updateIsMobile() {
+			is_mobile = window.matchMedia('(max-width: 786px)').matches;
 		}
-		return acc;
-	}, {});
+		window.addEventListener('resize', updateIsMobile);
+		return () => window.removeEventListener('resize', updateIsMobile);
+	});
 
-	$: province_count = Object.keys(stations_by_province);
+	let num_columns = $derived(is_mobile ? 1 : 3);
+
+	let stations_by_province = $derived(
+		provinces.reduce((acc, province) => {
+			const filtered = $search_store.filtered.filter((station) => station.Provincia === province);
+			if (filtered.length > 0) {
+				acc[province] = filtered;
+			}
+			return acc;
+		}, {})
+	);
+
+	let province_count = $derived(Object.keys(stations_by_province));
 </script>
 
-<div class="bold flex h-[10vh] flex-col items-center justify-center text-3xl">
-	<h1>Buscador</h1>
-</div>
-
-{#if is_mobile}
-	<Drawer.Root>
-		<Drawer.Trigger class="fixed bottom-6 right-6 z-50">
-			<Button
-				variant="default"
-				class="flex h-10 w-10 items-center justify-center rounded-full p-0 shadow-lg"
+<div class="bold flex h-[20vh] flex-col items-center justify-center gap-4">
+	<h1 class="text-3xl font-bold">Buscador de estaciones</h1>
+	<div class="flex w-full flex-row gap-4 px-2">
+		<div class="w-full">
+			<Searchbar />
+		</div>
+		<div class="w-auto">
+			<Popover.Root
+				open={open_popover}
+				onOpenChange={() => {
+					open_popover = true;
+				}}
 			>
-				<MagnifyingGlass />
-			</Button>
-		</Drawer.Trigger>
-		<Drawer.Content>
-			<Drawer.Header>
-				<Drawer.Title>Filtros de contenido</Drawer.Title>
-				<Drawer.Description>
-					Aquí podrás buscar por nombre de la estación, municipio, provincia...
-				</Drawer.Description>
-			</Drawer.Header>
-			<div class="my-5 flex w-full flex-row justify-center gap-4 p-4">
-				<div class="relative flex w-full flex-row">
-					<input
-						id="searchbar"
-						bind:value={$search_store.search}
-						type="text"
-						name="search"
-						placeholder="Busca por nombre..."
-						class="w-full rounded border p-2"
-						on:input={(e) => {
-							const value = (e.target as HTMLInputElement).value.toLowerCase();
-							// Update the store with a new object so Svelte detects the change.
-							search_store.update((s) => ({
-								...s,
-								search: value,
-								filtered: s.data.filter((item) => item.search_terms.toLowerCase().includes(value))
-							}));
-						}}
-					/>
-					<button
-						type="button"
-						on:click={clear_search}
-						class="m-2 text-gray-500 hover:text-gray-800"
-					>
-						<svg
-							width="15"
-							height="15"
-							viewBox="0 0 15 15"
-							fill="none"
-							xmlns="http://www.w3.org/2000/svg"
-						>
-							<path
-								d="M12.8536 2.85355C13.0488 2.65829 13.0488 2.34171 12.8536 2.14645C12.6583 1.95118 12.3417 1.95118 12.1464 2.14645L7.5 6.79289L2.85355 2.14645C2.65829 1.95118 2.34171 1.95118 2.14645 2.14645C1.95118 2.34171 1.95118 2.65829 2.14645 2.85355L6.79289 7.5L2.14645 12.1464C1.95118 12.3417 1.95118 12.6583 2.14645 12.8536C2.34171 13.0488 2.65829 13.0488 2.85355 12.8536L7.5 8.20711L12.1464 12.8536C12.3417 13.0488 12.6583 13.0488 12.8536 12.8536C13.0488 12.6583 13.0488 12.3417 12.8536 12.1464L8.20711 7.5L12.8536 2.85355Z"
-								fill="currentColor"
-								fill-rule="evenodd"
-								clip-rule="evenodd"
-							></path>
-						</svg>
-					</button>
-				</div>
-			</div>
-		</Drawer.Content>
-	</Drawer.Root>
-{:else}
-	<Popover.Root>
-		<Popover.Trigger class="fixed bottom-6 right-6 z-50">
-			<Button
-				variant="default"
-				class="flex h-10 w-10 items-center justify-center rounded-full p-0 shadow-lg"
-			>
-				<MagnifyingGlass />
-			</Button>
-		</Popover.Trigger>
-		<Popover.Content class="m-5 w-auto p-0">
-			<Card.Root class="flex flex-col items-center justify-center text-center">
-				<Card.Header>
-					<Card.Title>Búsqueda por nombre</Card.Title>
-					<Card.Description
-						>Introduce el nombre de la estación, la localidad o la provincia</Card.Description
-					>
-				</Card.Header>
-				<Card.Content>
-					<div class="sticky top-0 isolate z-10 my-5 flex w-full flex-row justify-center gap-4">
-						<div class="relative flex w-auto flex-row">
-							<input
-								id="searchbar"
-								bind:value={$search_store.search}
-								type="text"
-								name="search"
-								placeholder="Busca por nombre..."
-								class="w-full rounded border p-2"
-								on:input={(e) => {
-									const value = (e.target as HTMLInputElement).value.toLowerCase();
-									// Update the store with a new object so Svelte detects the change.
-									search_store.update((s) => ({
-										...s,
-										search: value,
-										filtered: s.data.filter((item) =>
-											item.search_terms.toLowerCase().includes(value)
-										)
-									}));
-								}}
-							/>
-							<button
-								type="button"
-								on:click={clear_search}
-								class="m-2 text-gray-500 hover:text-gray-800"
+				<Popover.Trigger>
+					<Button class="flex h-10 w-10 items-center justify-center rounded-full p-0 shadow-lg">
+						<ChevronDown />
+					</Button>
+				</Popover.Trigger>
+				<Popover.Content class="w-screen p-0 md:mx-5 md:w-[30vw]">
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>Más filtros</Card.Title>
+							<Card.Description>
+								<p>ordenar por (?)</p>
+							</Card.Description>
+						</Card.Header>
+						<Card.Content>
+							<div class="flex h-full w-full flex-col gap-4">
+								<div class="flex w-full flex-col gap-4">
+									<Label for="province">Provincia</Label>
+									<Select
+										items={provinces}
+										bind:value={selected_province}
+										placeholder="Selecciona provincia..."
+									/>
+								</div>
+								<div class="flex w-full flex-col gap-4">
+									<Label for="province">Combustible</Label>
+									<Select
+										items={fuels}
+										bind:value={selected_fuel}
+										placeholder="Selecciona combustible..."
+									/>
+								</div>
+							</div>
+						</Card.Content>
+						<Card.Footer>
+							<Button
+								class="h-[30px]"
+								onclick={() => {
+									selected_fuel = null;
+									selected_province = null;
+									open_popover = false;
+								}}>Borrar filtros</Button
 							>
-								<svg
-									width="15"
-									height="15"
-									viewBox="0 0 15 15"
-									fill="none"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-										d="M12.8536 2.85355C13.0488 2.65829 13.0488 2.34171 12.8536 2.14645C12.6583 1.95118 12.3417 1.95118 12.1464 2.14645L7.5 6.79289L2.85355 2.14645C2.65829 1.95118 2.34171 1.95118 2.14645 2.14645C1.95118 2.34171 1.95118 2.65829 2.14645 2.85355L6.79289 7.5L2.14645 12.1464C1.95118 12.3417 1.95118 12.6583 2.14645 12.8536C2.34171 13.0488 2.65829 13.0488 2.85355 12.8536L7.5 8.20711L12.1464 12.8536C12.3417 13.0488 12.6583 13.0488 12.8536 12.8536C13.0488 12.6583 13.0488 12.3417 12.8536 12.1464L8.20711 7.5L12.8536 2.85355Z"
-										fill="currentColor"
-										fill-rule="evenodd"
-										clip-rule="evenodd"
-									></path>
-								</svg>
-							</button>
-						</div>
-					</div>
-				</Card.Content>
-			</Card.Root>
-		</Popover.Content>
-	</Popover.Root>
-{/if}
+						</Card.Footer>
+					</Card.Root>
+				</Popover.Content>
+			</Popover.Root>
+		</div>
+	</div>
+</div>
 
 <Accordion.Root
 	type="single"
@@ -242,32 +220,37 @@
 		<Accordion.Item value={province}>
 			<Accordion.Trigger class="mx-2">{province}</Accordion.Trigger>
 			<Accordion.Content>
-				<div class="h-[80vh] max-h-[80vh]">
-					<VirtualList width="100%" height="100%" itemCount={item_count} itemSize={350}>
+				<div class="h-[72vh]">
+					<VirtualList
+						width="100%"
+						height="100%"
+						itemCount={Math.ceil(province_stations.length / num_columns)}
+						itemSize={350}
+					>
 						<div slot="item" let:index let:style {style}>
 							<div class="grid-row bg-gray-300 p-2">
 								{#each Array(num_columns) as _, col_index}
-									{#if $search_store.filtered[index * num_columns + col_index]}
+									{#if province_stations[index * num_columns + col_index]}
 										<div class="grid-item m-2">
 											<Card.Root class="flex h-[350px] flex-col justify-center">
 												<Card.Header>
 													<Card.Title class="w-full max-w-full break-all">
-														<p>{$search_store.filtered[index * num_columns + col_index].Rótulo}</p>
+														<p>{province_stations[index * num_columns + col_index].Rótulo}</p>
 													</Card.Title>
 													<Card.Description>
 														<sub>
-															{$search_store.filtered[index * num_columns + col_index].Dirección},
-															{$search_store.filtered[index * num_columns + col_index].Municipio}
+															{province_stations[index * num_columns + col_index].Dirección},
+															{province_stations[index * num_columns + col_index].Municipio}
 														</sub>
 													</Card.Description>
 												</Card.Header>
 												<Card.Content>
-													{#each $search_store.filtered[index * num_columns + col_index].precio_fields as precio}
-														<p><b>{precio.key}:</b> {precio.value}</p>
+													{#each province_stations[index * num_columns + col_index].precio_fields as precio}
+														<p><b>{precio.key}:</b> {precio.value}€</p>
 													{/each}
 												</Card.Content>
 												<Card.Footer>
-													<p>{$search_store.filtered[index * num_columns + col_index].Horario}</p>
+													<p>{province_stations[index * num_columns + col_index].Horario}</p>
 												</Card.Footer>
 											</Card.Root>
 										</div>
