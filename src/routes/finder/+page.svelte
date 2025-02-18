@@ -254,11 +254,11 @@
 			<Accordion.Trigger class="mx-2">{province}</Accordion.Trigger>
 			<Accordion.Content>
 				<div
-					class="h-[{Math.ceil(province_stations.length / num_columns) == 1 ? '400px' : '72vh'}]"
+					class="h-[72vh]"
 				>
 					<VirtualList
 						width="100%"
-						height={Math.ceil(province_stations.length / num_columns) == 1 ? '400px' : '100%'}
+						height="100%"
 						itemCount={Math.ceil(province_stations.length / num_columns)}
 						itemSize={350}
 					>
