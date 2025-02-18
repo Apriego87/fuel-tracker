@@ -92,24 +92,34 @@
 	let is_mobile = $state(false);
 
 	$effect(() => {
+		// Retrieve current filter values
 		const province_filter = selected_province ? selected_province.value : '';
 		const fuel_filter = selected_fuel ? selected_fuel.value : '';
 
+		// Close popover if any filter is applied
 		if (selected_fuel || selected_province) {
 			open_popover = false;
 		}
 
-		search_store.update((s) => ({
-			...s,
-			selected_province: province_filter,
-			selected_fuel: fuel_filter,
-			filtered: s.data.filter((station) => {
-	
-				const province_match = province_filter
+		// Helper function to get the price for a given fuel
+		function getPrice(station, fuelKey) {
+			const field = station.precio_fields.find((field) =>
+				field.key.toLowerCase().includes(fuelKey.toLowerCase())
+			);
+			return field ? parseFloat(field.value.replace(',', '.')) : Infinity;
+		}
+
+		// Update the store with combined filtering and optional sorting.
+		search_store.update((s) => {
+			const newFiltered = s.data.filter((station) => {
+				// Province filter:
+				const provinceMatch = province_filter
 					? station.Provincia.toLowerCase().includes(province_filter.toLowerCase())
 					: true;
-	
-				const fuel_match = fuel_filter
+				// Search term filter:
+				const searchMatch = station.search_terms.toLowerCase().includes(s.search.toLowerCase());
+				// Fuel filter:
+				const fuelMatch = fuel_filter
 					? station.precio_fields.some(
 							(field) =>
 								field.key.toLowerCase().includes(fuel_filter.toLowerCase()) ||
@@ -117,11 +127,23 @@
 									field.value.toLowerCase().includes(fuel_filter.toLowerCase()))
 						)
 					: true;
+				return provinceMatch && searchMatch && fuelMatch;
+			});
 
-					const search_match = station.search_terms.toLowerCase().includes(s.search.toLowerCase()) 
-				return province_match && fuel_match && search_match;
-			})
-		}));
+			// If a fuel filter is selected, sort by that fuel's price.
+			if (fuel_filter) {
+				newFiltered.sort((a, b) => {
+					return getPrice(a, fuel_filter) - getPrice(b, fuel_filter);
+				});
+			}
+
+			return {
+				...s,
+				selected_province: province_filter,
+				selected_fuel: fuel_filter,
+				filtered: newFiltered
+			};
+		});
 	});
 
 	onMount(() => {
@@ -170,9 +192,9 @@
 				<Popover.Content class="w-screen p-0 md:mx-5 md:w-[30vw]">
 					<Card.Root>
 						<Card.Header>
-							<Card.Title>Más filtros</Card.Title>
+							<Card.Title><p>Filtros</p></Card.Title>
 							<Card.Description>
-								<p>ordenar por (?)</p>
+								<p>Al seleccionar un combustible, los resultados se ordenarán por precio.</p>
 							</Card.Description>
 						</Card.Header>
 						<Card.Content>
