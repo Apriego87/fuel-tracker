@@ -157,7 +157,6 @@
 			is_mobile = isMobile();
 		}
 		updateIsMobile();
-		console.log(navigator.userAgent);
 		
 		// Optionally, update on resize if needed
 		window.addEventListener('resize', updateIsMobile);
@@ -165,7 +164,6 @@
 	});
 
 	let num_columns = $derived(is_mobile ? 1 : 3);
-	$inspect(num_columns)
 
 	let stations_by_province = $derived(
 		provinces.reduce((acc, province) => {
@@ -264,7 +262,6 @@
 					>
 						<div slot="item" let:index let:style {style}>
 							<div class="grid-row bg-gray-300 p-2">
-								{console.log(province + ' ' + Math.ceil(province_stations.length / num_columns))}
 								{#each Array(num_columns) as _, col_index}
 									{#if province_stations[index * num_columns + col_index]}
 										<div class="grid-item m-2">
